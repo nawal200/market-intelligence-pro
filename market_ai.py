@@ -8,7 +8,7 @@ class MarketAI:
     def __init__(self, api_key):
         """تهيئة محرك Gemini AI"""
         genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel('gemini-1.5-flash')
+       self.model = genai.GenerativeModel("gemini-2.0-flash")
     
     def analyze(self, neg_text, category):
         """
