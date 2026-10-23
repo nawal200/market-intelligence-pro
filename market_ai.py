@@ -31,7 +31,7 @@ class MarketAI:
         if self.api_key and HAS_GEMINI:
             try:
                 genai.configure(api_key=self.api_key)
-                self.model = genai.GenerativeModel("gemini-1.5-flash")
+                self.model = genai.GenerativeModel("gemini-1.5-flash-latest")
                 self.available = True
                 print("Gemini AI initialized successfully")
             except Exception as e:
