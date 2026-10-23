@@ -1,10 +1,9 @@
 import os
-from typing import Dict, Optional
 
 try:
     import google.generativeai as genai
     HAS_AI = True
-except ImportError:
+except:
     HAS_AI = False
 
 
@@ -18,71 +17,88 @@ class MarketAI:
             import streamlit as st
             if hasattr(st, 'secrets') and 'GEMINI_API_KEY' in st.secrets:
                 self.api_key = self.api_key or st.secrets['GEMINI_API_KEY']
-        except Exception:
+        except:
             pass
         if self.api_key and HAS_AI:
             try:
                 genai.configure(api_key=self.api_key)
                 self.model = genai.GenerativeModel("gemini-pro")
                 self.available = True
-            except Exception:
-                self.available = False
+            except:
+                pass
 
     def analyze(self, neg_text, category, language=None):
         if language:
             self.language = language
+        print(f"DEBUG: Language = {self.language}")
         if not neg_text or not neg_text.strip():
-            if self.language == 'ar':
-                return "لا توجد تقييمات سلبية."
-            return "No negative reviews."
+            return "لا توجد تقييمات." if self.language == 'ar' else "No reviews."
         if self.available:
             return self._ai(neg_text, category)
         return self._stat(neg_text, category)
 
     def _ai(self, neg_text, category):
         if self.language == 'ar':
-            prompt = f"""أنت محلل سوق. حلل هذه التقييمات السلبية لتطبيقات '{category}':
+            prompt = f"""أنت محلل سوق محترف. حلل هذه التقييمات السلبية (1-2 نجوم) لتطبيقات '{category}':
+
 {neg_text}
-أعطي بالعربية: أهم 3 مشاكل، أهم 3 ميزات ناقصة، توصيات استراتيجية."""
+
+أجب باللغة العربية فقط مع هذه الأقسام:
+## 🐞 أكثر 3 مشاكل متكررة
+## 💡 أهم 3 ميزات ناقصة
+## 🎯 توصيات استراتيجية"""
         else:
             prompt = f"""You are a market analyst. Analyze these negative reviews for '{category}' apps:
+
 {neg_text}
-Provide in English: Top 3 bugs, Top 3 missing features, Strategic recommendations."""
+
+Provide in English:
+## Top 3 Recurring Bugs
+## Top 3 Missing Features
+## Strategic Recommendations"""
         try:
             return self.model.generate_content(prompt).text
-        except Exception as e:
+        except:
             return self._stat(neg_text, category)
 
     def _stat(self, neg_text, category):
         neg_count = neg_text.count('\n') + 1 if neg_text else 0
+        text = neg_text.lower()
+
         if self.language == 'ar':
             kw = {
-                'مشاكل في الأداء': ['slow','crash','freeze','lag','bug','error','loading','broken','بطيء','يتوقف'],
-                'مشاكل في الواجهة': ['confusing','hard','difficult','ugly','navigation','معقد','صعب','واجهة'],
-                'ميزات ناقصة': ['missing','need','want','should','wish','add','ناقص','أتمنى'],
-                'دعم العملاء': ['support','help','service','response','ignored','دعم','مساعدة'],
-                'مخاوف الأسعار': ['expensive','price','cost','subscription','غالي','سعر','اشتراك']
+                'مشاكل الأداء': ['slow','crash','freeze','lag','bug','error','loading','broken','بطيء','يتوقف','خطأ'],
+                'مشاكل الواجهة': ['confusing','hard','difficult','ugly','navigation','معقد','صعب','واجهة'],
+                'ميزات ناقصة': ['missing','need','want','should','wish','add','ناقص','أتمنى','أحتاج'],
+                'دعم العملاء': ['support','help','service','response','ignored','دعم','مساعدة','رد'],
+                'الأسعار': ['expensive','price','cost','subscription','غالي','سعر','اشتراك','مجاني']
             }
-            text = neg_text.lower()
             counts = {c: sum(text.count(k) for k in ks) for c, ks in kw.items()}
             top = sorted(counts.items(), key=lambda x: x[1], reverse=True)[:3]
+
             report = f"## 📊 التحليل الإحصائي لفئة '{category}'\n\n"
             report += f"**عدد التقييمات السلبية:** {neg_count}\n\n"
-            report += "### 🐞 أكثر الشكاوى شيوعاً:\n"
+            report += "###  أكثر الشكاوى شيوعاً:\n"
             for i, (cat, count) in enumerate(top, 1):
                 if count > 0:
                     report += f"{i}. **{cat}**: ذُكرت {count} مرة\n"
+            if not any(c > 0 for _, c in top):
+                report += "لم يتم اكتشاف أنماط محددة.\n"
+
             report += "\n### 💡 التوصيات الاستراتيجية:\n"
-            report += "1. **تحسين الأداء**: تطبيق سريع ومستقر\n"
-            report += "2. **تبسيط الواجهة**: واجهة بديهية وسهلة\n"
-            report += "3. **إضافة الميزات المطلوبة**: بناءً على ملاحظات المستخدمين\n"
-            report += "4. **تحسين الدعم**: خدمة عملاء سريعة\n"
-            report += "5. **تسعير عادل**: نموذج شفاف وتنافسي\n\n"
-            report += f"### 📊 فرصة السوق:\n"
+            report += "1. **تحسين الأداء**: تطبيق سريع ومستقر بوقت تحميل أقل من ثانيتين\n"
+            report += "2. **تبسيط الواجهة**: واجهة نظيفة وبديهية وسهلة الاستخدام\n"
+            report += "3. **إضافة الميزات المطلوبة**: بناءً على ملاحظات المستخدمين الفعلية\n"
+            report += "4. **تحسين الدعم**: خدمة عملاء على مدار الساعة\n"
+            report += "5. **تسعير عادل**: نموذج تسعير شفاف وتنافسي\n\n"
+
+            report += "### 📊 فرصة السوق:\n"
             score = 'عالية' if neg_count > 50 else 'متوسطة' if neg_count > 20 else 'منخفضة'
             report += f"- **درجة الفرصة**: {score}\n"
             report += f"- **المستخدمون غير الراضين**: {neg_count}\n"
+            report += f"- **مستوى المخاطرة**: متوسط\n"
             return report
+
         else:
             kw = {
                 'Performance Issues': ['slow','crash','freeze','lag','bug','error','loading','broken'],
@@ -91,22 +107,24 @@ Provide in English: Top 3 bugs, Top 3 missing features, Strategic recommendation
                 'Customer Support': ['support','help','service','response','ignored','no reply'],
                 'Pricing Concerns': ['expensive','price','cost','subscription','money','paid']
             }
-            text = neg_text.lower()
             counts = {c: sum(text.count(k) for k in ks) for c, ks in kw.items()}
             top = sorted(counts.items(), key=lambda x: x[1], reverse=True)[:3]
-            report = f"## 📊 Statistical Analysis for '{category}'\n\n"
+
+            report = f"##  Statistical Analysis for '{category}'\n\n"
             report += f"**Negative Reviews:** {neg_count}\n\n"
-            report += "### 🐞 Top Complaints:\n"
+            report += "###  Top Complaints:\n"
             for i, (cat, count) in enumerate(top, 1):
                 if count > 0:
                     report += f"{i}. **{cat}**: {count} mentions\n"
+
             report += "\n### 💡 Strategic Recommendations:\n"
             report += "1. **Optimize Performance**: Fast and stable app\n"
             report += "2. **Simplify UI**: Clean and intuitive interface\n"
             report += "3. **Add Requested Features**: Based on user feedback\n"
             report += "4. **Improve Support**: 24/7 customer service\n"
             report += "5. **Fair Pricing**: Transparent model\n\n"
-            report += f"### 📊 Market Opportunity:\n"
+
+            report += "### 📊 Market Opportunity:\n"
             score = 'High' if neg_count > 50 else 'Medium' if neg_count > 20 else 'Low'
             report += f"- **Opportunity Score**: {score}\n"
             report += f"- **Dissatisfied Users**: {neg_count}\n"
