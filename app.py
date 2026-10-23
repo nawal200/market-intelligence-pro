@@ -422,7 +422,7 @@ with st.sidebar:
                     if neg_dict:
                         with st.spinner(t('running_analysis')):
                             st.session_state.analysis_results = ai_engine.analyze_multiple_apps(
-                                neg_dict, st.session_state.keyword
+                                neg_dict, st.session_state.keyword, st.session_state.language
                             )
 
                     st.balloons()
