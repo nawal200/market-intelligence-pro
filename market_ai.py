@@ -84,55 +84,95 @@ Be data-driven, concise, and professional. Use bullet points."""
         except Exception as e:
             return f"AI Error: {str(e)}\n\n{self._statistical_analysis(neg_text, category)}"
 
-    def _statistical_analysis(self, neg_text: str, category: str) -> str:
-        """تحليل إحصائي بديل"""
+         def _statistical_analysis(self, neg_text, category):
+        """تحليل إحصائي ثنائي اللغة"""
         neg_count = neg_text.count('\n') + 1 if neg_text else 0
 
-        complaint_keywords = {
-            'Performance Issues': ['slow', 'crash', 'freeze', 'lag', 'bug', 'error', 'loading', 'broken'],
-            'UI/UX Problems': ['confusing', 'hard', 'difficult', 'complicated', 'ugly', 'navigation', 'interface'],
-            'Missing Features': ['missing', 'need', 'want', 'should', 'wish', 'add', 'lack', 'absent'],
-            'Customer Support': ['support', 'help', 'service', 'response', 'ignored', 'no reply', 'contact'],
-            'Pricing Concerns': ['expensive', 'price', 'cost', 'subscription', 'money', 'paid', 'free']
-        }
+        if self.language == 'ar':
+            # قاموس عربي
+            kw = {
+                'مشاكل في الأداء': ['slow','crash','freeze','lag','bug','error','loading','broken','بطيء','يتوقف','خطأ'],
+                'مشاكل في الواجهة': ['confusing','hard','difficult','complicated','ugly','navigation','interface','معقد','صعب'],
+                'ميزات ناقصة': ['missing','need','want','should','wish','add','lack','absent','ناقص','أتمنى'],
+                'دعم العملاء': ['support','help','service','response','ignored','no reply','contact','دعم','مساعدة'],
+                'مخاوف الأسعار': ['expensive','price','cost','subscription','money','paid','free','غالي','سعر','اشتراك']
+            }
+            text = neg_text.lower()
+            counts = {c: sum(text.count(k) for k in ks) for c, ks in kw.items()}
+            top = sorted(counts.items(), key=lambda x: x[1], reverse=True)[:3]
+            
+            report = f"""## 📊 التحليل الإحصائي لفئة '{category}'
 
-        text_lower = neg_text.lower()
-        keyword_counts = {}
-        for cat, keywords in complaint_keywords.items():
-            keyword_counts[cat] = sum(text_lower.count(kw) for kw in keywords)
+**عدد التقييمات السلبية المحللة:** {neg_count}
 
-        sorted_issues = sorted(keyword_counts.items(), key=lambda x: x[1], reverse=True)
+### 🐞 أكثر الشكاوى شيوعاً:
+"""
+            for i, (cat, count) in enumerate(top, 1):
+                if count > 0:
+                    report += f"{i}. **{cat}**: ذُكرت {count} مرة\n"
+            
+            if not any(c > 0 for _, c in top):
+                report += "لم يتم اكتشاف أنماط محددة.\n"
+            
+            report += f"""
+### 💡 التوصيات الاستراتيجية:
+1. **تحسين الأداء**: ضمان تطبيق سريع ومستقر بوقت تحميل أقل من ثانيتين
+2. **تبسيط الواجهة**: واجهة نظيفة وبديهية مع أقل عدد من النقرات
+3. **إضافة الميزات المطلوبة**: بناءً على تحليل ملاحظات المستخدمين
+4. **تحسين الدعم**: خدمة عملاء على مدار الساعة مع استجابة خلال ساعة
+5. **تسعير عادل**: نموذج تسعير شفاف وتنافسي
 
-        report = f"""## Statistical Analysis for '{category}'
+### 📊 مؤشرات فرصة السوق:
+- **التقييمات السلبية**: {neg_count} مستخدم يعبر عن عدم الرضا
+- **درجة الفرصة**: {'عالية' if neg_count > 50 else 'متوسطة' if neg_count > 20 else 'منخفضة'}
+- **مستوى المخاطرة**: متوسط
+
+---
+*ملاحظة: فعّلي مفتاح Gemini API للحصول على تحليل أعمق بالذكاء الاصطناعي*"""
+            return report
+        
+        else:
+            # English version
+            kw = {
+                'Performance Issues': ['slow','crash','freeze','lag','bug','error','loading','broken'],
+                'UI/UX Problems': ['confusing','hard','difficult','complicated','ugly','navigation','interface'],
+                'Missing Features': ['missing','need','want','should','wish','add','lack','absent'],
+                'Customer Support': ['support','help','service','response','ignored','no reply','contact'],
+                'Pricing Concerns': ['expensive','price','cost','subscription','money','paid','free']
+            }
+            text = neg_text.lower()
+            counts = {c: sum(text.count(k) for k in ks) for c, ks in kw.items()}
+            top = sorted(counts.items(), key=lambda x: x[1], reverse=True)[:3]
+            
+            report = f"""## 📊 Statistical Analysis for '{category}'
 
 **Negative Reviews Analyzed:** {neg_count}
 
-### Top Complaint Categories:
+### 🐞 Top Complaint Categories:
 """
-        for i, (cat, count) in enumerate(sorted_issues[:3], 1):
-            if count > 0:
-                report += f"{i}. **{cat}**: {count} mentions\n"
-
-        if not any(count > 0 for _, count in sorted_issues):
-            report += "No specific complaint patterns detected.\n"
-
-        report += f"""
-### Strategic Recommendations:
-1. **Optimize Performance**: Ensure fast, stable app with less than 2s load time
+            for i, (cat, count) in enumerate(top, 1):
+                if count > 0:
+                    report += f"{i}. **{cat}**: {count} mentions\n"
+            
+            if not any(c > 0 for _, c in top):
+                report += "No specific patterns detected.\n"
+            
+            report += f"""
+### 💡 Strategic Recommendations:
+1. **Optimize Performance**: Ensure fast, stable app with <2s load time
 2. **Simplify UI**: Clean, intuitive interface with minimal clicks
 3. **Add Requested Features**: Based on user feedback analysis
-4. **Improve Support**: 24/7 customer service with less than 1h response
+4. **Improve Support**: 24/7 customer service with <1h response
 5. **Fair Pricing**: Transparent, competitive pricing model
 
-### Market Opportunity:
+### 📊 Market Opportunity:
 - **Negative Reviews**: {neg_count} users expressing dissatisfaction
 - **Opportunity Score**: {'High' if neg_count > 50 else 'Medium' if neg_count > 20 else 'Low'}
 - **Risk Level**: Medium
 
 ---
-*Note: Configure GEMINI_API_KEY in Streamlit Secrets for detailed AI-powered analysis*"""
-
-        return report
+*Note: Configure GEMINI_API_KEY for detailed AI-powered analysis*"""
+            return report
 
     def analyze_multiple_apps(self, apps_reviews_dict: Dict[str, str], category: str) -> Dict[str, Dict]:
         """تحليل عدة تطبيقات دفعة واحدة"""
